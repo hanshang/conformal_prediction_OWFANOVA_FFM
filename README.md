@@ -5,6 +5,8 @@
 - Split conformal prediction method
 - Sequential conformal prediction method
 
+## Below is a list of files
+
 1. load_packages.R: required R packages
 2. read_data.R: read Japanese subnational age- and sex-specific log mortality rates
 3. interval_score.R: internal function for computing coverage probability difference and mean interval score

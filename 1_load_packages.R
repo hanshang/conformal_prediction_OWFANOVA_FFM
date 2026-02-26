@@ -2,7 +2,7 @@
 # name packages
 ################
 
-packages <- c("ftsa", "sde", "hdftsa", "xtable", "dplyr", "quantreg") 
+packages <- c("hdftsa", "sde", "ftsa", "xtable", "dplyr", "quantreg") 
 
 ## Now load or install and load all 
 

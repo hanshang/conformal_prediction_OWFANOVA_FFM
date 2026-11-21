@@ -4,7 +4,6 @@
 # fore_method: forecasting method, ets or auto.arima
 # alpha: level of significance
 
-
 FMP_FFM_fun_int_eval_sequential <- function(raw_data, smooth_data, fh, fore_method, alpha)
 {
     n_age = dim(raw_data)[1]
@@ -67,63 +66,6 @@ FMP_FFM_fun_int_eval_sequential <- function(raw_data, smooth_data, fh, fore_meth
     }
     return(list(q_alpha_array = q_alpha_mat, int_score_array = int_score_array))
 }
-
-### alpha = 0.2
-
-## arima
-
-# female
-
-sequential_int_score_list_female_arima = sequential_int_score_list_male_arima = list()
-for(iw in 1:10)
-{
-    sequential_int_score_list_female_arima[[iw]] = FMP_FFM_fun_int_eval_sequential(raw_data = female_prefecture_rate_array, 
-                                                                             smooth_data = female_prefecture_rate_array_smooth, 
-                                                                             fh = iw, fore_method = "arima", alpha = 0.2)
- 
-    sequential_int_score_list_male_arima[[iw]] = FMP_FFM_fun_int_eval_sequential(raw_data = male_prefecture_rate_array, 
-                                                                           smooth_data = male_prefecture_rate_array_smooth, 
-                                                                           fh = iw, fore_method = "arima", alpha = 0.2)
-    print(iw); rm(iw)
-}
-
-sequential_int_score_list_female_arima_mat = sequential_int_score_list_male_arima_mat = matrix(NA, 10, 3)
-for(iw in 1:10)
-{
-    sequential_int_score_list_female_arima_mat[iw,] = apply(sequential_int_score_list_female_arima[[iw]]$int_score_array, 2, mean)
-    sequential_int_score_list_male_arima_mat[iw,]   = apply(sequential_int_score_list_male_arima[[iw]]$int_score_array, 2, mean)
-    rm(iw)
-}
-rownames(sequential_int_score_list_female_arima_mat) = rownames(sequential_int_score_list_male_arima_mat) = 1:10
-colnames(sequential_int_score_list_female_arima_mat) = colnames(sequential_int_score_list_male_arima_mat) = c("ECP", "CPD", "score")
-
-## ets
-
-# female
-
-sequential_int_score_list_female_ets = sequential_int_score_list_male_ets = list()
-for(iw in 1:10)
-{
-    sequential_int_score_list_female_ets[[iw]] = FMP_FFM_fun_int_eval_sequential(raw_data = female_prefecture_rate_array, 
-                                                                                 smooth_data = female_prefecture_rate_array_smooth, 
-                                                                                 fh = iw, fore_method = "ets", alpha = 0.2)
-    
-    sequential_int_score_list_male_ets[[iw]] = FMP_FFM_fun_int_eval_sequential(raw_data = male_prefecture_rate_array, 
-                                                                               smooth_data = male_prefecture_rate_array_smooth, 
-                                                                               fh = iw, fore_method = "ets", alpha = 0.2)
-    print(iw); rm(iw)
-}
-
-sequential_int_score_list_female_ets_mat = sequential_int_score_list_male_ets_mat = matrix(NA, 10, 3)
-for(iw in 1:10)
-{
-    sequential_int_score_list_female_ets_mat[iw,] = apply(sequential_int_score_list_female_ets[[iw]]$int_score_array, 2, mean)
-    sequential_int_score_list_male_ets_mat[iw,]   = apply(sequential_int_score_list_male_ets[[iw]]$int_score_array, 2, mean)
-    rm(iw)
-}
-rownames(sequential_int_score_list_female_ets_mat) = rownames(sequential_int_score_list_male_ets_mat) = 1:10
-colnames(sequential_int_score_list_female_ets_mat) = colnames(sequential_int_score_list_male_ets_mat) = c("ECP", "CPD", "score")
-
 
 ### alpha = 0.05
 
@@ -197,3 +139,6 @@ for(iw in 1:10)
 rownames(sequential_int_score_list_female_ets_PI_95_mat) = rownames(sequential_int_score_list_male_ets_PI_95_mat) = 1:10
 colnames(sequential_int_score_list_female_ets_PI_95_mat) = colnames(sequential_int_score_list_male_ets_PI_95_mat) = c("ECP", "CPD", "score")
 
+# save results
+
+save(list = ls(pattern = "^sequential_int_score_list_.*_PI_95"), file = "results/JPN_sequential_95.RData")

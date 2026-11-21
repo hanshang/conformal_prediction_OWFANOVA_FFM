@@ -1,6 +1,6 @@
-source("FFM.R")
-source("choice_K.R")
-source("interval_score.R")
+source("6_FFM.R")
+source("4_choice_K.R")
+source("3_interval_score.R")
 
 # data_set_array: n_age x n_state x n_year
 # fh: a forecast horizon
@@ -23,7 +23,7 @@ FMP_FFM_fun <- function(data_set_array, fh, fmethod)
     One_way_FMP_smooth_grand <- One_way_FMP_smooth$grand_effect
     One_way_FMP_smooth_row <- One_way_FMP_smooth$row_effect
     
-    One_way_FMP_smooth_resid <- One_way_Residuals(Y = t(data_set_mat), n_prefecture = n_state, year = 1:n_year, age = 1:n_age)
+    One_way_FMP_smooth_resid <- One_way_median_polish_residuals(Y = t(data_set_mat), n_prefecture = n_state, year = 1:n_year, age = 1:n_age)
     One_way_FMP_smooth_resid_array = array(NA, dim = c(n_age, n_year, n_state), dimnames = list(1:n_age, 1:n_year, 1:n_state))
     for(iw in 1:n_state)
     {
@@ -118,7 +118,11 @@ FMP_FFM_fun_int_eval <- function(raw_data, smooth_data, fh, fore_method, alpha)
     FMP_FFM_quantile = FMP_FFM_sd = matrix(NA, n_age, n_state)
     for(iw in 1:n_state)
     {
+        # pointwise quantile
+        
         FMP_FFM_quantile[,iw] = apply(abs(FMP_FFM_err[,iw,]), 1, quantile, (1 - alpha))
+        
+        # pointwise sd
         FMP_FFM_sd[,iw] = apply(FMP_FFM_err[,iw,], 1, sd)
         rm(iw)
     }
@@ -162,6 +166,8 @@ FMP_FFM_fun_int_eval <- function(raw_data, smooth_data, fh, fore_method, alpha)
 
         lb_array_quantile[,,iw] = point_forecast[,iw,] - FMP_FFM_quantile[,iw]
         ub_array_quantile[,,iw] = point_forecast[,iw,] + FMP_FFM_quantile[,iw]
+
+        # compute interval score
         
         int_score_sd[iw,] = interval_score(holdout = raw_data[,iw,(n_year - (10 - fh)):n_year], lb = lb_array_sd[,,iw],
                                            ub = ub_array_sd[,,iw], alpha = alpha)
@@ -171,80 +177,9 @@ FMP_FFM_fun_int_eval <- function(raw_data, smooth_data, fh, fore_method, alpha)
     }
     rownames(int_score_sd) = rownames(int_score_quantile) = 1:n_state
     colnames(int_score_sd) = colnames(int_score_quantile) = c("ECP", "CPD", "score")
-    return(list(int_score_sd = int_score_sd, int_score_quantile = int_score_quantile))
+    return(list(int_score_sd = int_score_sd, int_score_quantile = int_score_quantile,
+                lb_array_sd = lb_array_sd, ub_array_sd = ub_array_sd))
 }
-
-################
-### alpha = 0.2
-################
-
-## female
-
-# arima
-
-FMP_FFM_fun_int_score_female_array_arima_sd = FMP_FFM_fun_int_score_female_array_arima_quantile = array(NA, dim = c(47, 3, 10), dimnames = list(1:47, c("ECP", "CPD", "score"), 1:10))
-for(iw in 1:10)
-{
-    dum = FMP_FFM_fun_int_eval(raw_data = female_prefecture_rate_array, 
-                               smooth_data = female_prefecture_rate_array_smooth, 
-                               fh = iw, fore_method = "arima", alpha = 0.2)
-    FMP_FFM_fun_int_score_female_array_arima_sd[,,iw] = dum$int_score_sd
-    FMP_FFM_fun_int_score_female_array_arima_quantile[,,iw] = dum$int_score_quantile
-    print(iw); rm(iw); rm(dum)
-}
-
-FMP_FFM_fun_int_score_female_array_arima_sd_mean = t(apply(FMP_FFM_fun_int_score_female_array_arima_sd, c(2, 3), mean))
-FMP_FFM_fun_int_score_female_array_arima_quantile_mean = t(apply(FMP_FFM_fun_int_score_female_array_arima_quantile, c(2, 3), mean))
-
-# ets
-
-FMP_FFM_fun_int_score_female_array_ets_sd = FMP_FFM_fun_int_score_female_array_ets_quantile = array(NA, dim = c(47, 3, 10), dimnames = list(1:47, c("ECP", "CPD", "score"), 1:10))
-for(iw in 1:10)
-{
-    dum = FMP_FFM_fun_int_eval(raw_data = female_prefecture_rate_array, 
-                                smooth_data = female_prefecture_rate_array_smooth, 
-                                fh = iw, fore_method = "ets", alpha = 0.2)
-    FMP_FFM_fun_int_score_female_array_ets_sd[,,iw] = dum$int_score_sd
-    FMP_FFM_fun_int_score_female_array_ets_quantile[,,iw] = dum$int_score_quantile
-    print(iw); rm(iw); rm(dum)
-}
-
-FMP_FFM_fun_int_score_female_array_ets_sd_mean = t(apply(FMP_FFM_fun_int_score_female_array_ets_sd, c(2, 3), mean))
-FMP_FFM_fun_int_score_female_array_ets_quantile_mean = t(apply(FMP_FFM_fun_int_score_female_array_ets_quantile, c(2, 3), mean))
-        
-## male
-
-# arima
-
-FMP_FFM_fun_int_score_male_array_arima_sd = FMP_FFM_fun_int_score_male_array_arima_quantile = array(NA, dim = c(47, 3, 10), dimnames = list(1:47, c("ECP", "CPD", "score"), 1:10))
-for(iw in 1:10)
-{
-    dum = FMP_FFM_fun_int_eval(raw_data = male_prefecture_rate_array, 
-                               smooth_data = male_prefecture_rate_array_smooth, 
-                               fh = iw, fore_method = "arima", alpha = 0.2)
-    FMP_FFM_fun_int_score_male_array_arima_sd[,,iw] = dum$int_score_sd
-    FMP_FFM_fun_int_score_male_array_arima_quantile[,,iw] = dum$int_score_quantile
-    print(iw); rm(iw); rm(dum)
-}
-
-FMP_FFM_fun_int_score_male_array_arima_sd_mean = t(apply(FMP_FFM_fun_int_score_male_array_arima_sd, c(2, 3), mean))
-FMP_FFM_fun_int_score_male_array_arima_quantile_mean = t(apply(FMP_FFM_fun_int_score_male_array_arima_quantile, c(2, 3), mean))
-
-# ets
-
-FMP_FFM_fun_int_score_male_array_ets_sd = FMP_FFM_fun_int_score_male_array_ets_quantile = array(NA, dim = c(47, 3, 10), dimnames = list(1:47, c("ECP", "CPD", "score"), 1:10))
-for(iw in 1:10)
-{
-    dum = FMP_FFM_fun_int_eval(raw_data = male_prefecture_rate_array, 
-                               smooth_data = male_prefecture_rate_array_smooth, 
-                               fh = iw, fore_method = "ets", alpha = 0.2)
-    FMP_FFM_fun_int_score_male_array_ets_sd[,,iw] = dum$int_score_sd
-    FMP_FFM_fun_int_score_male_array_ets_quantile[,,iw] = dum$int_score_quantile
-    print(iw); rm(iw); rm(dum)
-}
-
-FMP_FFM_fun_int_score_male_array_ets_sd_mean = t(apply(FMP_FFM_fun_int_score_male_array_ets_sd, c(2, 3), mean))
-FMP_FFM_fun_int_score_male_array_ets_quantile_mean = t(apply(FMP_FFM_fun_int_score_male_array_ets_quantile, c(2, 3), mean))
 
 #################
 ### alpha = 0.05
@@ -318,149 +253,6 @@ for(iw in 1:10)
 FMP_FFM_fun_int_score_male_array_ets_sd_alpha_0.05_mean = t(apply(FMP_FFM_fun_int_score_male_array_ets_sd_alpha_0.05, c(2, 3), mean))
 FMP_FFM_fun_int_score_male_array_ets_quantile_alpha_0.05_mean = t(apply(FMP_FFM_fun_int_score_male_array_ets_quantile_alpha_0.05, c(2, 3), mean))
 
-#################
-## female & male
-#################
+# save results
 
-# arima
-
-xtable(rbind(cbind(FMP_FFM_fun_int_score_female_array_arima_sd_alpha_0.05_mean,
-                   FMP_FFM_fun_int_score_female_array_arima_quantile_alpha_0.05_mean,
-                   sequential_int_score_list_female_arima_PI_95_mat),
-
-             cbind(FMP_FFM_fun_int_score_male_array_arima_sd_alpha_0.05_mean,
-                   FMP_FFM_fun_int_score_male_array_arima_quantile_alpha_0.05_mean,
-                   sequential_int_score_list_male_arima_PI_95_mat)), digits = 3)
-
-# ets
-
-xtable(rbind(cbind(FMP_FFM_fun_int_score_female_array_ets_sd_alpha_0.05_mean,
-                   FMP_FFM_fun_int_score_female_array_ets_quantile_alpha_0.05_mean,
-                   sequential_int_score_list_female_ets_PI_95_mat),
-             
-             cbind(FMP_FFM_fun_int_score_male_array_ets_sd_alpha_0.05_mean,
-                   FMP_FFM_fun_int_score_male_array_ets_quantile_alpha_0.05_mean,
-                   sequential_int_score_list_male_ets_PI_95_mat)), digits = 3)
-
-##########
-# boxplot
-##########
-
-### ECP
-
-## arima
-
-# female
-
-savefig("Fig_2a", width = 12, height = 10, toplines = 0.8, type = "png")
-boxplot(FMP_FFM_fun_int_score_female_array_arima_sd_alpha_0.05[,1,],
-        names = paste0("", 1:10),
-        xlab = "",
-        ylab = "ECP",
-        main = "Split conformal prediction (sd)")
-abline(h = 0.95, lty = 2)
-dev.off()
-
-savefig("Fig_2b", width = 12, height = 10, toplines = 0.8, type = "png")
-boxplot(sequential_int_score_list_female_arima_PI_95_value[,1,],
-        names = paste0("", 1:10),
-        xlab = "",
-        ylab = "",
-        main = "Sequential conformal prediction")
-abline(h = 0.95, lty = 2)
-dev.off()
-
-# male
-
-savefig("Fig_2c", width = 12, height = 10, toplines = 0.8, type = "png")
-boxplot(FMP_FFM_fun_int_score_male_array_arima_sd_alpha_0.05[,1,],
-        names = paste0("", 1:10),
-        xlab = "Horizon",
-        ylab = "ECP",
-        main = "")
-abline(h = 0.95, lty = 2)
-dev.off()
-
-savefig("Fig_2d", width = 12, height = 10, toplines = 0.8, type = "png")
-boxplot(sequential_int_score_list_male_arima_PI_95_value[,1,],
-        names = paste0("", 1:10),
-        xlab = "Horizon",
-        ylab = "",
-        main = "")
-abline(h = 0.95, lty = 2)
-dev.off()
-
-## ets
-
-# female
-
-boxplot(FMP_FFM_fun_int_score_female_array_ets_sd_alpha_0.05[,1,],
-        names = paste0("", 1:10),
-        xlab = "Horizon",
-        ylab = "ECP",
-        main = "Split conformal prediction (sd)")
-abline(h = 0.95, lty = 2)
-
-boxplot(sequential_int_score_list_female_ets_PI_95_value[,1,],
-        names = paste0("", 1:10),
-        xlab = "Horizon",
-        ylab = "ECP",
-        main = "Sequential conformal prediction")
-abline(h = 0.95, lty = 2)
-
-# male
-
-boxplot(FMP_FFM_fun_int_score_male_array_ets_sd_alpha_0.05[,1,],
-        names = paste0("", 1:10),
-        xlab = "Horizon",
-        ylab = "ECP",
-        main = "")
-abline(h = 0.95, lty = 2)
-
-boxplot(sequential_int_score_list_male_ets_PI_95_value[,1,],
-        names = paste0("", 1:10),
-        xlab = "Horizon",
-        ylab = "ECP",
-        main = "")
-abline(h = 0.95, lty = 2)
-
-### score
-
-## arima
-
-# female
-
-savefig("Fig_3a", width = 12, height = 10, toplines = 0.8, type = "png")
-boxplot(FMP_FFM_fun_int_score_female_array_arima_sd_alpha_0.05[,3,],
-        names = paste0("", 1:10),
-        xlab = "",
-        ylab = "Mean interval score",
-        main = "Split conformal prediction (sd)", ylim = c(0, 0.41))
-dev.off()
-
-savefig("Fig_3b", width = 12, height = 10, toplines = 0.8, type = "png")
-boxplot(sequential_int_score_list_female_arima_PI_95_value[,3,],
-        names = paste0("", 1:10),
-        xlab = "",
-        ylab = "",
-        main = "Sequential conformal prediction")
-dev.off()
-
-# male
-
-savefig("Fig_3c", width = 12, height = 10, toplines = 0.8, type = "png")
-boxplot(FMP_FFM_fun_int_score_male_array_arima_sd_alpha_0.05[,3,],
-        names = paste0("", 1:10),
-        xlab = "Horizon",
-        ylab = "Mean interval score",
-        main = "", ylim = c(0, 0.31))
-dev.off()
-
-savefig("Fig_3d", width = 12, height = 10, toplines = 0.8, type = "png")
-boxplot(sequential_int_score_list_male_arima_PI_95_value[,3,],
-        names = paste0("", 1:10),
-        xlab = "Horizon",
-        ylab = "",
-        main = "")
-dev.off()
-
+save(list = ls(pattern = "^FMP_FFM_fun_int_score_.*_alpha_0.05"), file = "results/JPN_split_95.RData")

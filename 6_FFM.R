@@ -63,18 +63,6 @@ HDFTS_factor_decomp <- function(data)
         rm(ij)
     }
     
-    # variance
-    
-    C_X = array(NA, dim = c(no_pop, no_pop, D_val, D_val))
-    for(ij in 1:no_pop)
-    {
-        for(iw in 1:no_pop)
-        {
-            C_X[ij,iw,,] = crossprod(factor_loading[,,ij], factor_loading[,,iw])
-        }
-    }
-    rm(ij); rm(iw)
-    
     error = array(NA, dim = c(sample_size, no_pop, D_val))
     for(ij in 1:no_pop)
     {
